@@ -101,6 +101,72 @@ button:focus-visible, a:focus-visible {
     color: var(--muted);
 }
 
+.difficulty-control {
+    display:grid;
+    gap:5px;
+    color:var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+}
+
+.difficulty-control select {
+    min-height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--page);
+    color: var(--text);
+    font: inherit;
+}
+
+.restart-button {
+    min-height: 28px;
+    padding: 0 9px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    cursor: pointer;
+}
+
+.restart-overlay {
+    position:absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--canvas);
+}
+
+.restart-overlay[hidden] {
+    display: none;
+}
+
+.restart-number {
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: clamp(64px, 12vw, 120px);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.cancel-restart-link:hover {
+    color: var(--mono);
+    background-color: var(--page);
+}
+
+.restart-button:hover:not(:disabled){
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.restart-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
 .status-indicator{
     width: 6px;
     height:6px;
@@ -284,6 +350,10 @@ h1{
     cursor:crosshair;
 }
 
+.target:hover .targer-ring-outer {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
 .target[hidden]{
     display:none;
     z-index: 2;

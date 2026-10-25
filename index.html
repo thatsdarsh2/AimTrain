@@ -23,6 +23,14 @@
                         <h1 id="page-title">Classic</h1>
                     
                     </div>
+                    <label class ="difficulty-control" for="difficulty-select">
+                        <span>Difficulty</span>
+                        <select id="difficulty-select" name="difficulty">
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">HARDly anything</option>
+                        </select>
+                    </label>
                     <p class="session-duration">Session length <strong>60 seconds</strong></p>
                 </section>
 
@@ -65,7 +73,10 @@
                             <span class="target-ring target-ring-inner" aria-hidden="true"></span>
                             <span class="target-center" aria-hidden="true"></span>
                         </button>
-
+                        <div class="restart-overlay" id="restart-overlay" role="status" aria-live="assertive" hidden>
+                            <span class="restart-number" id="restart-countdown-number">3</span>
+                            <button class="cancel-restart-link" id="cancel-restart-button" type="button">Exit to pre-game</button>
+                        </div>
                         <div class="start-panel" id="start-panel">
                             <p class="start-kicker">CLASSIC · 60 SECONDS</p>
                             <h2>Ready when you are</h2>
@@ -79,6 +90,7 @@
 
                     <footer class="trainer-footer">
                         <span>Classic practice</span>
+                        <button class="restart-button" id="restart-button" type="button" disabled>Restart round</button>
                         <span>No sign-in needed</span>
                     </footer>
                 </section>
