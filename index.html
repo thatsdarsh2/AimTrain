@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang ="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="AimTrain browseer-based aim trainer."/>
+        <title>AimTrain —— Aim practice</title>
+        <link rel="stylesheet" href="styles/main.css"/>
+    </head>
+    <body>
+        <div class="app-shell">
+            <header class="topbar">
+                <a class="brand" href="#main" aria-label="AimTrain home">
+                    <span class="brand-mark" aria-hidden="true">AT</span>
+                    <span>AimTrain</span>
+                </a>
+                <p class="topbar-meta"><span class="status-indicator"></span>Ready to Practice</p>
+            </header>
+
+            <main id="main" class="main-content">
+                <section class="session-header" aria-labelledby="page-title">
+                    <div>
+                        <p class="section-index">PRACTICE MODE</p>
+                        <h1 id="page-title">Classic</h1>
+                    
+                    </div>
+                    <p class="session-duration">Session length <strong>30 seconds</strong></p>
+                </section>
+
+                <section class="trainer" aria-label="Aim training console">
+                    <div class="hud" role="group" aria-label="current session statitics">
+                        <div class="hud-stat">
+                            <span class="hud-label">Time</span>
+                            <span class="hud-value" id="time-value">00:30</span>
+                        </div>
+                        <div class="hud-stat">
+                            <span class="hud-label">Targets hit</span>
+                            <span class="hud-value" id="hits-value">0</span>
+                        </div>
+                        <div class="hud-stat">
+                            <span class="hud-label">Accuracy</span>
+                            <span class="hud-value" id="accuracy-value">——</span>
+                        </div>
+                        <div class="hud-stat">
+                            <span class="hud-label">Session</span>
+                            <span class="hud-value" id="status-value">Ready</span>
+                        </div>              
+                    </div>
+
+
+
+                    <div class="play-area" id="play-area" role="region" aria-label="Target practice area" aria-describedby="play-area-help">
+                        <p class="play=area-help" id="play-area-help">
+                            Practice area. start when you're ready, then click each targer as it appears.
+                        </p>
+                        <button class="target" id="target" type="button" aria-label="Practice target" hidden>
+                            <span clss="target-ring target-ring-outer" aria-hidden="true"></span>
+                            <span class="target-ring target-ring-inner" aria-hidden="true"></span>
+                            <span class="target-center" aria-hidden="true"></span>
+                        </button>
+
+                        <div class="start-panel" id="start-panel">
+                            <p class="start-kicker">CLASSIC · 30 SECONDS</p>
+                            <h2>Ready when you are</h2>
+                            <p class="start-copy">Click the target whenever it appears. You'll have 30 seconds</p>
+                            <button class="primary-button" id="start-button" type="button">
+                                Start 30-second Session
+                            </button>
+                        </div>
+                        <p class="session-announcement visually-hidden" id="session-announcement" aria-live="polite"></p>
+                    </div>
+
+                    <footer class="trainer-footer">
+                        <span>Classic practice</span>
+                        <span>No sign-in needed</span>
+                    </footer>
+                </section>
+            </main>
+        </div>
+    </body>
+</html>
