@@ -8,18 +8,21 @@ const startButton = document.querySelector("#start-button");
 const timeValue = document.querySelector("#time-value");
 const scoreValue = document.querySelector("#score-value");
 const missesValue = document.querySelector("#misses-value");
-const statusValue = document.querySelector("#status-value");
+const accuracyValue = document.querySelector("#accuracy-value");
+const hitRateValue = document.querySelector("#hit-rate-value");
+const bestScoreValue = document.querySelector("#best-score-value");
 
 const startKicker = startPanel?.querySelector(".start-kicker")
 const startHeading = startPanel?.querySelector("h2")
 const startCopy = startPanel?.querySelector(".start-copy")
 
-if(!playArea || !target || !startPanel || !startButton || !timeValue || !scoreValue || !missesValue || !statusValue || !startKicker || !startHeading || !startCopy) {
+if(!playArea || !target || !startPanel || !startButton || !timeValue || !scoreValue || !missesValue || !accuracyValue || !hitRateValue || !bestScoreValue || !startKicker || !startHeading || !startCopy) {
     throw new Error("AimTrain could not find its game elements.");
 
 }
 
 const session = createSession({durationSeconds : 60});
+let bestScore = 0;
 function formatTime(totalSeconds) {
     const minutes = Math.floor(totalSeconds/60);
     const seconds = totalSeconds % 60;
@@ -91,25 +94,41 @@ playArea.addEventListener("click", () => {
 });
 
 session.subscribe((state) => {
-    timeValue.textContent = formatTime(state.remainingSeconds);
-    scoreValue.textContent = String(state.hits);
-    missesValue.textContent = String(state.misses);
+  timeValue.textContent = formatTime(state.remainingSeconds);
+  scoreValue.textContent = String(state.hits);
+  missesValue.textContent = String(state.misses);
 
-    if(state.phase === "ready") {
-        statusValue.textContent = "Ready";
-    
-    }else if(state.phase === "running"){
-        statusValue.textContent = "Running";
-    }else {
-        statusValue.textContent = "Complete";
+  const totalShots = state.hits + state.misses;
 
-    
+  const accuracy =
+    totalShots === 0
+      ? "—"
+      : `${Math.round((state.hits / totalShots) * 100)}%`;
 
-        target.hidden = true;
-        startPanel.hidden = false;
-        startKicker.textContent = "FINAL SCORE";
-        startHeading.textContent = `You scored ${state.hits}`;
-        startCopy.textContent = ` you hit ${state.hits} targets and missed ${state.misses} times.`
-        startButton.textContent = "Play AGAIN";
-    }
+  const elapsedSeconds = state.durationSeconds - state.remainingSeconds;
+
+  const hitRate =
+    elapsedSeconds <= 0
+      ? "0.0"
+      : (state.hits / elapsedSeconds).toFixed(1);
+
+  if (state.phase === "complete" && state.hits > bestScore) {
+    bestScore = state.hits;
+  }
+
+  accuracyValue.textContent = accuracy;
+  hitRateValue.textContent = hitRate;
+  bestScoreValue.textContent = String(bestScore);
+
+  if (state.phase !== "complete") {
+    return;
+  }
+
+  target.hidden = true;
+  startPanel.hidden = false;
+  startKicker.textContent = "FINAL SCORE";
+  startHeading.textContent = `You scored ${state.hits}`;
+  startCopy.textContent =
+    `Accuracy: ${accuracy} · Hit rate: ${hitRate} / sec · Misses: ${state.misses} · Best score: ${bestScore}`;
+  startButton.textContent = "Play again";
 });
