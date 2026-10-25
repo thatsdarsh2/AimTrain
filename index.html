@@ -2,7 +2,7 @@
 <html lang ="en">
     <head>
         <meta charset="utf-8"/>
-        <meta name="viewport" content="AimTrain browseer-based aim trainer."/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <title>AimTrain —— Aim practice</title>
         <link rel="stylesheet" href="styles/main.css"/>
     </head>
@@ -33,12 +33,12 @@
                             <span class="hud-value" id="time-value">01:00</span>
                         </div>
                         <div class="hud-stat">
-                            <span class="hud-label">Targets hit</span>
-                            <span class="hud-value" id="hits-value">0</span>
+                            <span class="hud-label">Score</span>
+                            <span class="hud-value" id="score-value">0</span>
                         </div>
                         <div class="hud-stat">
-                            <span class="hud-label">Accuracy</span>
-                            <span class="hud-value" id="accuracy-value">——</span>
+                            <span class="hud-label">Misses</span>
+                            <span class="hud-value" id="misses-value">0</span>
                         </div>
                         <div class="hud-stat">
                             <span class="hud-label">Session</span>
@@ -49,11 +49,11 @@
 
 
                     <div class="play-area" id="play-area" role="region" aria-label="Target practice area" aria-describedby="play-area-help">
-                        <p class="play=area-help" id="play-area-help">
+                        <p class="play-area-help" id="play-area-help">
                             Practice area. start when you're ready, then click each targer as it appears.
                         </p>
                         <button class="target" id="target" type="button" aria-label="Practice target" hidden>
-                            <span clss="target-ring target-ring-outer" aria-hidden="true"></span>
+                            <span class="target-ring target-ring-outer" aria-hidden="true"></span>
                             <span class="target-ring target-ring-inner" aria-hidden="true"></span>
                             <span class="target-center" aria-hidden="true"></span>
                         </button>

@@ -47,6 +47,12 @@ export function createSession({
         return () => listeners.delete(listener);
     }
 
+    function stopTimer() {
+        if (timerId !== null){
+            window.clearInterval(timerId);
+            timerId = null;
+        }
+    }
     function finish() {
         if (disposed || state.phase !== "running" ) {
             return;
@@ -57,6 +63,7 @@ export function createSession({
         state.remainingSeconds = 0;
         publish();
     }
+
 
     function updateTimer() {
         if (disposed || state.phase !== "running") {
@@ -74,6 +81,7 @@ export function createSession({
         publish();
     }
 
+
     function start(){
         if(disposed || state.phase !== "ready") {
             return;
@@ -85,6 +93,7 @@ export function createSession({
         publish();
     }
 
+
     function recordHit() {
         if(disposed || state.phase !== "running") {
             return;
@@ -92,6 +101,8 @@ export function createSession({
         state.hits += 1;
         publish();
     }
+
+
 
     function recordMiss() {
         if(disposed || state.phase !== "running") {
@@ -101,6 +112,8 @@ export function createSession({
         state.misses += 1;
         publish();
     }
+
+
 
     function reset() {
         if (disposed) {
@@ -120,6 +133,8 @@ export function createSession({
         publish();
     }
 
+
+
     function dispose() {
         if (disposed) {
             return;
@@ -129,6 +144,8 @@ export function createSession({
         disposed = true;
         listeners.clear();
     }
+
+
     return {
         getState,
         subscribe,

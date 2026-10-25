@@ -14,7 +14,7 @@
     --muted: #a19f99;
     --quiet: #777a7a;
     --accent: #d4ad76;
-    --accent-hover:#dfbd8b
+    --accent-hover:#dfbd8b;
     --mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
 
 }
@@ -22,6 +22,10 @@
 
 *, *::before, *::after {
     box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
 }
 
 html{
@@ -48,8 +52,9 @@ button:focus-visible, a:focus-visible {
     outline-offset: 3px;
 }
 
+
 .app-shell{
-    width:min(1120px, calc(100%-48px));
+    width:min(1120px, calc(100% - 48px));
     margin-inline:auto;
 }
 
@@ -89,7 +94,7 @@ button:focus-visible, a:focus-visible {
 } 
 
 .topbar-meta{
-    display:inlint-flex;
+    display:inline-flex;
     align-items:center;
     gap:8px;
     margin:0;
@@ -271,7 +276,7 @@ h1{
     width: 46px;
     height: 46px;
     padding: 0;
-    transform: translate(-50%, 50%);
+    transform: translate(-50%, -50%);
     place-items: center;
     border: 0;
     border-radius: 50%;
@@ -281,6 +286,7 @@ h1{
 
 .target[hidden]{
     display:none;
+    z-index: 2;
 
 }
 
@@ -293,7 +299,7 @@ h1{
 .target-ring-outer{
     inset: 1px;
     border: 2px solid var(--accent);
-    background: #2d251a;
+    background: var(--accent);
 }
 
 .target-ring-inner {
@@ -350,7 +356,7 @@ h1{
 
 @media(max-width: 380px){
     .app-shell {
-        width: calc(100% -20px);
+        width: calc(100% - 20px);
     }
 
     .topbar-meta, .section-index, .session-duration {
@@ -367,6 +373,7 @@ h1{
 
     .trainer-footer {
         font-size:9px;
+        
     }
 }
 

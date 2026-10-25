@@ -1,17 +1,35 @@
+import { createSession } from "./game.js";
+
 const playArea = document.querySelector("#play-area");
-const target = document.querySelector("#target");
+let target = document.querySelector("#target");
 const startPanel = document.querySelector("#start-panel");
 const startButton = document.querySelector("#start-button");
 
-if(!playArea || !target || !startPanel || !startButton) {
+const timeValue = document.querySelector("#time-value");
+const scoreValue = document.querySelector("#score-value");
+const missesValue = document.querySelector("#misses-value");
+const statusValue = document.querySelector("#status-value");
+
+const startKicker = startPanel?.querySelector(".start-kicker")
+const startHeading = startPanel?.querySelector("h2")
+const startCopy = startPanel?.querySelector(".start-copy")
+
+if(!playArea || !target || !startPanel || !startButton || !timeValue || !scoreValue || !missesValue || !statusValue || !startKicker || !startHeading || !startCopy) {
     throw new Error("AimTrain could not find its game elements.");
 
 }
 
+const session = createSession({durationSeconds : 60});
+function formatTime(totalSeconds) {
+    const minutes = Math.floor(totalSeconds/60);
+    const seconds = totalSeconds % 60;
+
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
 function moveTarget(){
     const radius = target.offsetWidth / 2;
     const availableX = Math.max(0, playArea.clientWidth - radius * 2);
-    const availableY = Math.max(0, playArea.clientWidth - radius * 2);
+    const availableY = Math.max(0, playArea.clientHeight - radius * 2);
 
     const x = radius + Math.random () *availableX;
     const y = radius + Math.random() * availableY;
@@ -21,13 +39,77 @@ function moveTarget(){
 
 }
 
-startButton.addEventListener("click", () => {
+
+
+function handleTargetHit(event) {
+    event.stopPropagation();
+
+    if(session.getState().phase !== "running") {
+        return;
+    }
+
+    session.recordHit();
+
+    const nextTarget = target.cloneNode(true);
+    target.replaceWith(nextTarget);
+    target = nextTarget;
+
+    moveTarget();
+    target.addEventListener("click", handleTargetHit, {once : true});
+}
+
+function startRound(event) {
+    event.stopPropagation();
+
+    if(session.getState().phase === "running") {
+        return;
+    }
+
+    if(session.getState().phase === "complete") {
+        session.reset();
+    }
+
+
+    startKicker.textContent = "CLASSIC · 60 SECONDS"
+    startHeading.textContent = "Ready when you are";
+    startCopy.textContent = "Click the target whenever it appears. You'll have 60 seconds.";
+    startButton.textContent = "Start 60-second session";
+
     startPanel.hidden = true;
     target.hidden = false;
+
     moveTarget();
+    target.addEventListener("click", handleTargetHit, {once:true});
+    session.start();
+}
+
+startButton.addEventListener("click", startRound);
+
+
+playArea.addEventListener("click", () => {
+    session.recordMiss();
 });
 
-target.addEventListener("click", (event) => {
-    event.stopPropagation();
-    moveTarget();
+session.subscribe((state) => {
+    timeValue.textContent = formatTime(state.remainingSeconds);
+    scoreValue.textContent = String(state.hits);
+    missesValue.textContent = String(state.misses);
+
+    if(state.phase === "ready") {
+        statusValue.textContent = "Ready";
+    
+    }else if(state.phase === "running"){
+        statusValue.textContent = "Running";
+    }else {
+        statusValue.textContent = "Complete";
+
+    
+
+        target.hidden = true;
+        startPanel.hidden = false;
+        startKicker.textContent = "FINAL SCORE";
+        startHeading.textContent = `You scored ${state.hits}`;
+        startCopy.textContent = ` you hit ${state.hits} targets and missed ${state.misses} times.`
+        startButton.textContent = "Play AGAIN";
+    }
 });
