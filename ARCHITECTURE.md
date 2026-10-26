@@ -2,118 +2,193 @@
 
 ## Purpose
 
-AimTrain is a small client-side aim trainer. This document defines the architecture for its first version so implementation can be built against a shared plan. The proposed stack is plain HTML, CSS, and JavaScript modules; there is no backend or account system in the MVP.
+AimTrain is a browser-based aim trainer built with HTML, CSS, and JavaScript modules. It runs on the client without an account, server, or third-party game framework.
+
+This document describes the current implementation.
+
+## Project structure
+
+```text
+AimTrain/
+├── index.html
+├── styles/
+│   └── main.css
+├── src/
+│   ├── game.js
+│   └── main.js
+├── ARCHITECTURE.md
+└── README.md
+```
 
 ## System overview
 
 ```mermaid
 flowchart LR
-    Player[Player] -->|click, touch, keyboard| UI[Browser UI]
-    UI -->|start, hit, miss| Game[Session logic]
-    Game -->|state changes| UI
-    Game -->|completed result| Storage[localStorage adapter]
-    Storage -->|recent results| UI
-    
-    
-    
-    
+    Player[Player] -->|selects mode and settings| UI[HTML interface]
+    Player -->|hits and misses targets| UI
+    UI --> Controller[src/main.js]
+    Controller -->|starts and updates| Session[src/game.js]
+    Session -->|publishes session state| Controller
+    Controller -->|updates labels and targets| UI
+    Controller --> Preferences[Browser localStorage]
+    Preferences --> Controller
 ```
 
-The browser owns the full application lifecycle. The UI displays the current session, the session logic applies the rules, and the storage module persists completed results when browser storage is available.
+`main.js` connects the page, game session, modes, settings, and browser storage. `game.js` owns the session timer and hit/miss state. The HTML and CSS define and style the interface.
 
-## Main parts
+## Responsibilities
 
 ### `index.html`
 
-Provides the semantic page structure and app regions: introductory/start screen, practice area, live session statistics, results view, and recent-session history. It loads the JavaScript entry point as a module. It should not contain game rules.
+Provides the semantic page structure:
+
+- Header and live session status
+- Mode and difficulty selectors
+- Session statistics
+- Practice area and target button
+- Start panel and restart countdown overlay
+- Settings dialog
+
+It loads `src/main.js` as a JavaScript module.
 
 ### `styles/main.css`
 
-Defines the visual design, responsive layout, target states, focus styles, and reduced-motion behavior. Styling should make the play area adapt to the available viewport while keeping targets fully inside its bounds.
+Defines:
+
+- Page layout, themes, and interface-size variants
+- Responsive behavior for narrower screens
+- Target and settings dialog appearance
+- Hit and miss feedback animations
+- Keyboard focus styles and reduced-motion handling
+
+Theme colors are CSS custom properties selected by a theme attribute on the document root.
 
 ### `src/main.js`
 
-Application entry point. It finds the required DOM elements, loads saved history, creates the session controller, and connects UI events to game actions. It coordinates modules but should not become the home for scoring or persistence rules.
+Coordinates the browser application:
+
+- Checks for required HTML elements
+- Creates the session with a 60-second duration
+- Connects buttons and selectors to their actions
+- Implements Classic and Precision target behavior
+- Positions and resizes targets
+- Updates the timer, score, misses, accuracy, hit rate, and best score
+- Applies settings and saves preferences and the best score in `localStorage`
+- Cleans up target, respawn, and restart timers when a round ends or is abandoned
 
 ### `src/game.js`
 
-Owns the session state and rules:
+Implements session state and rules independently of the page. It exposes methods to:
 
-- A session lasts 30 seconds.
-- A session begins only after the player activates Start.
-- A target click records a hit and moves the target.
-- A play-area click outside the target records a miss.
-- The timer ending completes the session once.
-- Accuracy is hits divided by total shots, expressed as a percentage; it is 0 when there are no shots.
+- Read the current state
+- Subscribe to state updates
+- Start or reset a session
+- Record hits and misses
+- Dispose of the session timer and listeners
 
-The game module should expose a small API to start, record a hit or miss, subscribe to state changes, and dispose of timers/listeners when needed. It should not directly manipulate the DOM or access `localStorage`.
+The session uses the states `ready`, `running`, and `complete`. AimTrain passes a 60-second duration when creating a session. The module’s default duration is 30 seconds when no duration is supplied.
 
-### `src/ui.js`
+## Session state
 
-Renders state and binds interaction events. It shows the current countdown, hit/miss counts, and accuracy; presents the final result; and handles start/retry controls. It should distinguish clicking the target from clicking empty play-area space, and keep the target operable by keyboard and touch as well as mouse.
-
-### `src/storage.js`
-
-Provides functions to read and write recent session results in `localStorage`. It validates parsed data, handles malformed JSON or unavailable storage without crashing the application, and retains at most 10 results. The stored record contains a stable identifier, completion timestamp, duration, hits, misses, and accuracy.
-
-## Session state and flow
-
-The session moves through three states:
+A session state contains:
 
 ```text
-ready -> running -> complete
+phase: "ready" | "running" | "complete"
+durationSeconds: number
+remainingSeconds: number
+hits: number
+misses: number
 ```
 
-- **ready**: no active timer; the player can start.
-- **running**: timer and target are active; valid target and play-area interactions update the counters.
-- **complete**: timer has ended; a result is finalized and saved once. The player can start a new session.
+The session timer uses elapsed time from `performance.now()` and publishes updates while running. Hits and misses are only recorded during the `running` phase. When the remaining time reaches zero, the session becomes `complete`.
 
-Starting a new session resets counters and target position. Completion is idempotent: repeated timer callbacks or clicks after completion must not create extra results or modify the finished score.
+## Modes and difficulty
 
-## Data model
+The selected mode and difficulty are managed by `main.js`; they do not change the session-state API in `game.js`.
+
+### Classic
+
+- Targets use the selected difficulty’s base size.
+- The target-size preference can use a fixed size or a random size between 75% and 100% of the base.
+- A hit creates another target after the selected difficulty’s respawn delay.
+- Clicking empty space in the practice area records a miss.
+
+### Precision
+
+- Targets are fixed at 75% of the selected difficulty’s base size.
+- A target that is not hit before its lifetime ends is hidden and recorded as a miss.
+- The next target appears after the selected difficulty’s respawn delay.
+- The game tries up to 24 random positions to find one far enough from the previous target. If it cannot find one, it uses the last position it tried.
+
+Current difficulty settings:
+
+| Difficulty | Base target size | Respawn delay | Precision target lifetime | Precision minimum travel |
+| --- | ---: | ---: | ---: | ---: |
+| Easy | 60 px | 850 ms | 1,100 ms | 100 px |
+| Medium | 46 px | 400 ms | 800 ms | 140 px |
+| Hard | 32 px | 150 ms | 550 ms | 180 px |
+
+## Round lifecycle
 
 ```text
-SessionResult {
-  id: string
-  completedAt: string   // ISO 8601 timestamp
-  durationSeconds: 30
-  hits: number
-  misses: number
-  accuracy: number      // 0–100
-}
+ready → running → complete
+             ↘ restart countdown → ready → running
+             ↘ exit to pre-game → ready
 ```
 
-Live state additionally includes the current phase and remaining time. Target position is presentation/session state and does not need to be persisted.
+- **Start:** hides the start panel, displays a target, and starts the session.
+- **Hit:** records a hit, shows hit feedback, and schedules the next target.
+- **Miss:** an empty-area click records a miss. In Precision mode, an expired target also records a miss.
+- **Complete:** the timer ending displays the result and clears outstanding target timers.
+- **Restart:** the restart button starts a three-second countdown, then resets and starts a new round.
+- **Exit to pre-game:** during the restart countdown, resets the session and returns to the start panel.
+- **Play again:** from the results panel, resets and starts a new round.
 
-## Persistence behavior
+## Statistics
 
-Recent results are stored under one versioned key, such as `aimtrain.results.v1`. Reads should return an empty history when there is no saved value or when storage cannot be accessed. Invalid records should be discarded rather than preventing the trainer from starting. Writes should be best-effort; if they fail, the current session result should still be shown in the UI.
+The interface displays:
 
-There is no server synchronization. Data is scoped to the browser profile and origin.
+- **Score:** total hits
+- **Misses:** empty-area clicks and expired Precision targets
+- **Accuracy:** `hits / (hits + misses) × 100`; shown as a dash when there have been no attempts
+- **Hits per second:** hits divided by elapsed session time
+- **Best score:** the highest hit count saved in this browser
 
-## Input, layout, and accessibility
+The best score is shared across modes and difficulties; it is not stored separately for each one.
 
-- Keep target coordinates within the measured play-area bounds, accounting for target size.
-- Recalculate or clamp target position when the play area resizes.
-- Use a semantic button for the target so keyboard activation works.
-- Provide visible keyboard focus and text labels for important statistics.
-- Avoid using color alone for hit, miss, or completion feedback.
-- Respect `prefers-reduced-motion`; animation is optional and should not affect game timing.
-- Ensure touch targets and controls remain usable on narrow screens.
+## Settings and persistence
 
-## Error handling
+Settings are applied by `main.js` and saved locally in the browser:
 
-Storage errors must not block play. Missing DOM elements needed for core play should be reported clearly during development rather than causing silent failures. Timer cleanup must happen when a session ends or is replaced, so stale timers cannot alter a later session.
+- Theme: Tactical, Arctic, or Ember
+- Interface size: Compact, Standard, or Large
+- Classic target size: Varied or Fixed
+- Blur behind the settings dialog: On or Off
+- Hit sound: On or Off
 
-## Boundaries and non-goals
+Settings are stored under keys beginning with `aimtrain.settings.v1`. The best score is stored under `aimtrain.bestscore.v1`.
 
-The MVP does not include user accounts, a server API, multiplayer, online leaderboards, or cross-device history. Those features would require separate decisions about identity, privacy, data storage, and service operations before adding them.
+Storage reads and writes are guarded so the game can still run if browser storage is unavailable. These values are limited to the current browser profile and are not synchronized across devices. There is no session-history storage in the current implementation.
 
-## Suggested implementation order
+## Input and accessibility
 
-1. Create the semantic page structure and responsive play area.
-2. Implement session state and timing independently of the DOM.
-3. Connect target and play-area interactions to hit/miss updates.
-4. Render live stats and the completed result.
-5. Add best-effort local result history.
-6. Check keyboard, touch, resize, reduced-motion, and storage-failure behavior.
+- The target and other actions use HTML buttons, which support keyboard activation.
+- Selectors have associated labels.
+- The top-bar session status is announced politely to assistive technology.
+- Hit and miss feedback uses brief visual border flashes; misses use a distinct color from hits.
+- The stylesheet includes visible focus styles and a reduced-motion rule.
+- Targets are positioned within the measured play-area bounds.
+
+## Error handling and boundaries
+
+- Missing required page elements produce a clear startup error in `main.js`.
+- Storage failures do not prevent a session from running.
+- Target-expiry, respawn, and restart timers are cleared when they are no longer needed.
+- There is no backend, account system, online leaderboard, multiplayer, or cloud synchronization.
+
+## Local development
+
+Open the project folder in Visual Studio Code and serve `index.html` with the Live Server extension. A local server is recommended because the project uses JavaScript modules.
+
+No package installation or build step is required.
+```

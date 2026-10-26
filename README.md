@@ -1,100 +1,92 @@
 # AimTrain
 
-AimTrain is a lightweight, browser-based aim trainer. It gives players a quick place to practise clicking targets, track their accuracy, and see whether their aim is improving over time.
+AimTrain is a browser-based aim trainer built with HTML, CSS, and JavaScript. It runs in the browser without an account, backend, or third-party game library.
 
-This README describes the intended first version of the project. The implementation should follow this document; update it as product decisions change.
+## Features
 
-## What you can do
+- Two practice modes: **Classic** and **Precision**
+- Three difficulty levels: Easy, Medium, and Hard
+- 60-second rounds with live score, misses, accuracy, and hits-per-second stats
+- A saved best score and saved settings using browser storage
+- Preset color themes: Tactical, Arctic, and Ember
+- Interface size, target-size variation, blur, and sound settings
+- A three-second restart countdown with an option to exit to the pre-game screen
+- Responsive layout, keyboard-operable buttons, and reduced-motion support
 
-- Start a 30-second target practice session.
-- Click targets that appear at varied positions inside the play area.
-- See your score, hits, misses, and accuracy during and after a session.
-- Start another session without reloading the page.
-- Review a small history of recent results saved in the browser.
-- Use the interface on desktop and mobile-sized screens.
+## Practice modes
 
-The first version is intentionally focused on one simple practice mode. Accounts, online leaderboards, multiplayer, and advanced analytics are outside the initial scope.
+### Classic
 
-## How a session works
+Click targets as they appear. Target size and respawn speed depend on the selected difficulty. Target size can be set to vary between 75% and 100% of its normal size, or remain fixed.
 
-1. Open AimTrain and select **Start training**.
-2. For 30 seconds, click each target as it appears.
-3. A successful click adds one hit and replaces the target at a new position.
-4. Clicking elsewhere in the play area counts as a miss.
-5. When time runs out, the results screen shows hits, misses, and accuracy.
-6. The result is saved locally in the browser, and you can start again.
+### Precision
 
-Accuracy is calculated as `hits / (hits + misses) * 100`. If there are no shots, accuracy is 0%.
+Precision targets are fixed at 75% of their normal difficulty size. Each target expires if it is not hit in time, and counts as a miss. New targets try to appear at least a set distance from the previous target.
 
-## Technology
+| Difficulty | Target lifetime | Minimum distance from previous target |
+| --- | ---: | ---: |
+| Easy | 1.1 seconds | 100 pixels |
+| Medium | 0.8 seconds | 140 pixels |
+| Hard | 0.55 seconds | 180 pixels |
 
-The starter implementation is intended to use:
+If the play area is too small to meet the minimum distance after several attempts, the game uses the last position it tried.
 
-- HTML for page structure
-- CSS for layout, responsive styling, and target appearance
-- JavaScript modules for session logic and interaction
-- `localStorage` for recent session history
+## How to play
 
-This keeps the first version easy to run and understand without a framework, server, account system, or third-party service. If the implementation later adopts a build tool or framework, update the setup steps and architecture to match.
+1. Choose a mode and difficulty.
+2. Select **Start 60-second session**.
+3. Click each target before it disappears.
+4. Click an empty part of the practice area to record a miss.
+5. When the timer ends, review your results and choose **Play again**.
+
+The accuracy percentage is calculated as:
+
+`hits / (hits + misses) × 100`
+
+Hits per second is calculated from the number of hits and the elapsed round time.
+
+## Settings and saved data
+
+Settings include theme, interface size, target-size variation, background blur, and hit sound. The **Restore default settings** button resets these preferences.
+
+AimTrain saves settings and the best score in the browser’s local storage. This data stays in the current browser on the current device. It is not sent to a server or shared between devices. Clearing browser site data may remove it.
 
 ## Run locally
 
-The initial project can be run as a static site. From the project folder, open `index.html` in a modern browser. If browser restrictions prevent module loading from a local file, use any simple static HTTP server from the project folder, then open the local address it prints.
+1. Open the AimTrain folder in Visual Studio Code.
+2. Open `index.html` with the VS Code **Live Server** extension.
+3. Use the browser tab that Live Server opens.
 
-There are no package installation steps in the proposed vanilla JavaScript version. If a `package.json` is added later, document its actual scripts here rather than inventing commands.
-
-## Controls
-
-- **Start training**: begin a new 30-second session.
-- **Target click**: record a hit and show the next target.
-- **Play-area click outside the target**: record a miss.
-- **Play again**: return to a fresh session.
-
-The target should be usable with mouse, touch, and keyboard activation. The interface should show visible focus and avoid relying on color alone to communicate state.
-
-## Results and saved history
-
-Each completed session should include its completion time, duration, hits, misses, and accuracy. AimTrain stores recent results in the browser on the current device. The initial history should be capped at 10 sessions so it stays small and easy to manage.
-
-Saved results are local to the browser and are not synced between devices. Clearing site data removes them.
+No packages or build step are required.
 
 ## Project structure
 
 ```text
 AimTrain/
-├── index.html           # Page shell and accessible app regions
+├── index.html
 ├── styles/
-│   └── main.css         # Layout, visual states, and responsive rules
+│   └── main.css
 ├── src/
-│   ├── main.js          # App startup and wiring between UI and session logic
-│   ├── game.js          # Session state, timer, hit/miss, and scoring rules
-│   ├── ui.js            # Rendering and user-interface event handling
-│   └── storage.js       # Safe load/save of recent results in localStorage
-├── assets/              # Optional local images, icons, or fonts
-├── README.md
-└── ARCHITECTURE.md
+│   ├── game.js
+│   └── main.js
+├── ARCHITECTURE.md
+└── README.md
 ```
 
-Keep the structure small while the application is small. Add files when a real responsibility emerges, rather than splitting code into empty or one-use modules.
+- `index.html` contains the page structure and controls.
+- `styles/main.css` contains the layout, themes, target appearance, and responsive styles.
+- `src/main.js` connects the page controls to the game and settings.
+- `src/game.js` manages the session timer, score, misses, and session state.
+- `ARCHITECTURE.md` describes the project design and structure.
 
-## Design goals
+## Technology
 
-- Start a practice session quickly, with no account or setup flow.
-- Keep the play area and current stats easy to read at a glance.
-- Make hit, miss, countdown, and completion states clear.
-- Keep the app usable with keyboard, mouse, and touch input.
-- Treat saved history as optional: the trainer should still work if browser storage is unavailable.
+- HTML
+- CSS
+- JavaScript modules
+- Browser `localStorage`
 
-## Future ideas
+## Project scope
 
-These are possible later additions, not part of the first version:
-
-- Adjustable session duration and target size
-- Additional practice modes
-- Personal bests and trend summaries
-- Sound and reduced-motion preferences
-- Export or reset of local history
-
-## License
-
-No license has been selected yet. Add a `LICENSE` file and update this section before distributing the project.
+AimTrain is a small client-side project. It has no accounts, online leaderboard, multiplayer, or cloud-synced data.
+```

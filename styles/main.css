@@ -455,7 +455,7 @@ h1{
     width : 100%;
     min-height: 36px;
     margin-top: 16px;
-    border: 1px solid var (--border-strong);
+    border: 1px solid var(--border-strong);
     border-radius: 2px;
     background: transparent;
     color: var(--muted);
@@ -466,7 +466,7 @@ h1{
 }
 
 .settings-reset:hover {
-    border-color : var (--accent);
+    border-color : var(--accent);
     color : var(--text);
 }
 
@@ -586,6 +586,8 @@ body[data-interface-size="compact"] .hud-stat {
     min-height: 58px;
     padding-block: 16px;
 }
+
+
 
 body[data-interface-size="large"] .hud-stat {
     min-height: 84px;
