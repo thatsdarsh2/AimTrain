@@ -19,10 +19,20 @@ const startCopy = startPanel?.querySelector(".start-copy");
 const difficultySelect = document.querySelector("#difficulty-select");
 const restartButton = document.querySelector("#restart-button");
 const restartOverlay = document.querySelector("#restart-overlay");
-const restartCountdownNumber = document.querySelector(
-  "#restart-countdown-number",
-);
+const restartCountdownNumber = document.querySelector("#restart-countdown-number");
 const cancelRestartButton = document.querySelector("#cancel-restart-button");
+
+const settingsButton = document.querySelector("#settings-button");
+const settingsDialog = document.querySelector("#settings-dialog");
+const settingsCloseButton = document.querySelector("#settings-close");
+const themeSelect = document.querySelector("#theme-select");
+const interfaceSizeSelect = document.querySelector("#interface-size");
+const targetVariationSelect = document.querySelector("#target-variation");
+const blurToggle = document.querySelector("#blur-toggle");
+const soundToggle = document.querySelector("#sound-toggle");
+
+const topbarStatus = document.querySelector("#topbar-status");
+const settingsResetButton = document.querySelector("#settings-reset");
 
 if (
   !playArea ||
@@ -42,8 +52,17 @@ if (
   !restartButton ||
   !restartOverlay ||
   !restartCountdownNumber ||
-  !cancelRestartButton
-) {
+  !cancelRestartButton ||
+  !settingsButton ||
+  !settingsDialog ||
+  !settingsCloseButton ||
+  !themeSelect ||
+  !interfaceSizeSelect ||
+  !targetVariationSelect ||
+  !blurToggle ||
+  !soundToggle ||
+  !topbarStatus ||
+  !settingsResetButton) {
   throw new Error("AimTrain could not find one or more game elements.");
 }
 
@@ -55,10 +74,149 @@ const DIFFICULTIES = {
 
 const session = createSession({ durationSeconds: 60 });
 
+
+const BEST_SCORE_KEY = "aimtrain.bestscore.v1";
 let bestScore = 0;
+
+try{
+    const savedBestScore = Number(localStorage.getItem(BEST_SCORE_KEY));
+
+    if(Number.isFinite(savedBestScore) && savedBestScore > 0) {
+        bestScore = savedBestScore;
+    }
+} catch {
+    // the game can still run if the browser storage is unavaiaable
+
+}
 let respawnTimeoutID = null;
 let restartCountdownIntervalID = null;
 let restartCountdownActive = false;
+let feedbackTimeoutID = null;
+
+const SETTINGS_KEY  = "aimtrain.settings.v1";
+
+function loadSettings(){
+    try {
+        return {
+            theme: localStorage.getItem(SETTINGS_KEY + ".theme") || "tactical",
+            size: localStorage.getItem(SETTINGS_KEY +".size") || "standard",
+            variation: localStorage.getItem(SETTINGS_KEY + ".variation") || "varied",
+            blur: localStorage.getItem(SETTINGS_KEY + ".blur") !== "false",
+            sound: localStorage.getItem(SETTINGS_KEY + ".sound") === "true",
+        };
+    }catch{
+        return{
+            theme:"tactical",
+            size: "standard",
+            variation: "varied",
+            blur: true,
+            sound: false,
+        };
+    }
+}
+
+const settings = loadSettings();
+
+function saveSetting(name, value){
+    settings[name] = value;
+
+    try {
+        localStorage.setItem(`${SETTINGS_KEY}.${name}`, String(value));
+    }catch{
+        //settings will still work even if browser storageis unavailable
+    }
+}
+
+function applySettings(){
+    document.documentElement.dataset.theme = settings.theme;
+    document.body.dataset.interfaceSize = settings.size;
+    settingsDialog.dataset.blur = String(settings.blur);
+
+    themeSelect.value = settings.theme;
+    interfaceSizeSelect.value= settings.size;
+    targetVariationSelect.value = settings.variation;
+    blurToggle.checked = settings.blur;
+    soundToggle.checked = settings.sound;
+
+}
+
+function resetSettings() {
+    settings.theme = "tactical";
+    settings.size = "standard";
+    settings.variation = "varied";
+    settings.blur = true;
+    settings.sound - false;
+
+    for( const name of ["theme", "size", "variation", "blur", "sound"]) {
+        try {
+            localStorage.removeItem(`${SETTINGS_KEY}.${name}`);
+        
+        }catch {
+            // deafults still apply even if storage is unavailabel
+        }
+    }
+
+    applySettings();
+}
+
+let audioContext;
+
+function playHitSound(){
+    if (!settings.sound) return;
+
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if(!AudioContextClass) return;
+
+    audioContext ??= new AudioContextClass();
+
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.frequency.value = 660;
+    gain.gain.setValueAtTime(0.08, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.09);
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.09);
+}
+
+applySettings();
+
+settingsButton.addEventListener("click", () => settingsDialog.showModal());
+settingsCloseButton.addEventListener("click", () => settingsDialog.close());
+settingsResetButton.addEventListener("click", resetSettings);
+settingsDialog.addEventListener("click", (event) => {
+    if(event.target === settingsDialog) settingsDialog.close();
+
+});
+themeSelect.addEventListener("change", () => {
+    saveSetting("theme", themeSelect.value);
+    applySettings();
+});
+
+interfaceSizeSelect.addEventListener("change", () => {
+    saveSetting("size", interfaceSizeSelect.value);
+    applySettings();
+});
+
+targetVariationSelect.addEventListener("change", () => {
+    saveSetting("variation", targetVariationSelect.value);
+    applySettings();
+});
+
+blurToggle.addEventListener("change", () => {
+  saveSetting("blur", blurToggle.checked);
+  applySettings();
+});
+
+soundToggle.addEventListener("change", () => {
+    saveSetting("sound", soundToggle.checked);
+    applySettings();
+
+});
+
+
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60);
@@ -68,9 +226,16 @@ function formatTime(totalSeconds) {
 }
 
 function moveTarget() {
-  const sizeScale = 0.75 + Math.random() * 25;
-  target.style.width = `${DIFFICULTIES[difficultySelect.value].targetSize * sizeScale}px`;
-  target.style.height = `${DIFFICULTIES[difficultySelect.value].targetSize * sizeScale}px`;
+  const baseSize = DIFFICULTIES[difficultySelect.value].targetSize;
+
+  const sizeScale = settings.variation === "varied" ? 0.75 + Math.random() * 0.25 : 1;
+
+  const targetSize = baseSize * sizeScale
+
+  target.style.width = `${targetSize}px`;
+  target.style.height = `${targetSize}px`;
+
+
   const radius = target.offsetWidth / 2;
   const availableX = Math.max(0, playArea.clientWidth - radius * 2);
   const availableY = Math.max(0, playArea.clientHeight - radius * 2);
@@ -106,6 +271,23 @@ function clearRestartCountdown() {
   restartOverlay.hidden = true;
 }
 
+function showShotFeedback(type) {
+    const feedbackClass = type === "hit" ? "feedback-hit" : "feedback-miss"
+
+    playArea.classList.remove("feedback-hit", "feedback-miss");
+    void playArea.offsetWidthl // restart the brief feedback animation
+    playArea.classList.add(feedbackClass);
+
+    window.clearTimeout(feedbackTimeoutID);
+    feedbackTimeoutID = window.setTimeout(() => {
+        playArea.classList.remove("feedback-hit", "feedback-miss");
+        feedbackTimeoutID = null;
+    }, 180);
+}
+
+
+
+
 function handleTargetHit(event) {
   event.stopPropagation();
 
@@ -114,6 +296,8 @@ function handleTargetHit(event) {
   }
 
   session.recordHit();
+  showShotFeedback("hit");
+  playHitSound();
 
   const nextTarget = target.cloneNode(true);
   target.replaceWith(nextTarget);
@@ -230,14 +414,17 @@ cancelRestartButton.addEventListener("click", exitToPregame);
 difficultySelect.addEventListener("change", applyDifficulty);
 
 playArea.addEventListener("click", () => {
-  if (restartCountdownActive) {
+  if (restartCountdownActive || session.getState().phase !== "running") {
     return;
   }
 
+  showShotFeedback("miss");
   session.recordMiss();
 });
 
 session.subscribe((state) => {
+
+    topbarStatus.textContent = state.phase === "running" ? "Running" : state.phase === "complete" ? "Session complete" : "Ready to practice";
   difficultySelect.disabled = state.phase === "running";
   restartButton.disabled =
     state.phase !== "running" || restartCountdownActive;
@@ -262,6 +449,12 @@ session.subscribe((state) => {
 
   if (state.phase === "complete" && state.hits > bestScore) {
     bestScore = state.hits;
+
+    try{
+        localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+    } catch {
+        // the current rounf still works if saving is unavailable
+    }
   }
 
   accuracyValue.textContent = accuracy;
